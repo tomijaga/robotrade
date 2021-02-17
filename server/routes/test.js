@@ -8,8 +8,8 @@ import {
   nextId,
   readCustomerFile,
   writeToCustomerFile,
-} from "../CustomFunctions/ReadWrite.js";
-import { executeOrder } from "../CustomFunctions/Execute.js";
+} from "../RouteFunctions/ReadWrite.js";
+import { executeOrder } from "../Operations/Execute.js";
 
 const router = express.Router();
 

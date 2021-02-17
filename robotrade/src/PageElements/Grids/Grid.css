@@ -1,0 +1,11 @@
+.grid .MuiDataGrid-colCell,
+.grid .MuiDataGrid-cell {
+  color: azure;
+  background: inherit;
+  font-size: 0.8rem;
+}
+
+.MuiDataGrid-cell {
+  color: white;
+  font-weight: bold;
+}

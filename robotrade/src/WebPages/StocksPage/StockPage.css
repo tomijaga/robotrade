@@ -1,0 +1,19 @@
+.parentGrid {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  height: 100%;
+  width: 100%;
+  grid-template-columns: minmax(185px, 250px) minmax(350px, 1fr) minmax(
+      200px,
+      350px
+    );
+}
+
+@media (max-width: 800px) {
+  .stockPageDiv1 {
+    display: none;
+  }
+  .parentGrid {
+    grid-template-columns: 0px minmax(350px, 1fr) minmax(200px, 350px);
+  }
+}

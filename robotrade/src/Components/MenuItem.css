@@ -1,0 +1,32 @@
+.hoverItem:hover {
+  background-color: rgb(56, 56, 58);
+  cursor: pointer;
+}
+
+.MenuItem {
+  width: calc(100% - 28px);
+  background: inherit;
+  min-height: 40px;
+  height: auto;
+  padding: 4px 14px;
+  font-size: 0.8rem;
+  z-index: inherit 100;
+}
+
+.MenuItem * {
+  margin: 0px;
+  padding: 0px;
+}
+
+p.symbol {
+  font-weight: bold;
+}
+
+p.name {
+  color: inherit;
+  opacity: 0.7;
+}
+
+div.rightItems {
+  text-align: right;
+}

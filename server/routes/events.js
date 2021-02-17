@@ -7,13 +7,18 @@ import {
   nextId,
   readCustomerFile,
   writeToCustomerFile,
-} from "../CustomFunctions/ReadWrite.js";
-import { auth } from "../CustomFunctions/Authorize.js";
+} from "../RouteFunctions/ReadWrite.js";
+import { auth } from "../RouteFunctions/Authorize.js";
 import {
   createEvent,
   getEvent,
   deleteEvent,
-} from "../CustomFunctions/eventFunctions.js";
+} from "../RouteFunctions/eventFunctions.js";
+import UserModel from "../models/user.js";
+import EventModel from "../models/event.js";
+import mongoose from "mongoose";
+import { isIdValid } from "../RouteFunctions/Authorize.js";
+
 const router = express.Router();
 
 router.use(bodyParser.urlencoded({ extended: true }));
@@ -23,106 +28,102 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 router.get("/", (req, res) => {
-  readCustomerFile(req.session.username, (userData) => {
-    console.log("getting Events");
-    console.log(userData.events.events);
-    res.status(200).json(userData.events.events);
+  const { username } = req.session;
+
+  UserModel.findOne({ username }).then((user) => {
+    console.log("getting " + username + "'s events:");
+    console.log(user.events);
+    res.status(200).json(user.events);
   });
 });
 
-router.get("/:id", (req, res) => {
-  const id = req.params.id;
-  if (id) {
-    readCustomerFile(req.session.username, (userData) => {
-      console.log("getting Event", id);
-      const event = getEvent(userData, id);
-      if (event) {
+router.get("/:id", isIdValid, (req, res) => {
+  const { username } = req.session;
+  let id = req.params.id;
+
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    id = mongoose.Types.ObjectId(id);
+    if (EventModel.exists({ _id: id })) {
+      EventModel.findById({ _id: id }).then((event) => {
+        console.log("getting " + username + "'s event with id[" + id + "]");
         console.log(event);
         res.status(200).json(event);
-      } else {
-        console.log("There is no Record of this event");
-        return res.status(404).send("There is no Record of this event");
-      }
-    });
+      });
+    } else {
+      console.log("There is no Record of this event");
+      return res.status(404).send("There is no Record of this event");
+    }
+  } else {
+    console.log("ID entered is Invalid");
+    res.status(400).json("ID entered is Invalid");
   }
 });
 
 router.post("/", (req, res) => {
   let username = req.session.username;
-  readCustomerFile(username, (userData) => {
-    const newAlert = createEvent(userData, req.body);
-    if (newAlert) {
-      writeToCustomerFile(username, userData, () => {
-        console.log("Creating Event ...", newAlert);
-        res.json(newAlert);
-      });
+  const eventObj = req.body;
+
+  createEvent(username, eventObj).then((newEvent) => {
+    if (newEvent) {
+      console.log("Event Created", newEvent);
+      return res.status(200).json(newEvent);
     } else {
       console.log("Insufficient Info: Alert could not be created");
-      res.status(400).send("Insufficient Info: Alert could not be created");
+      return res
+        .status(400)
+        .send("Insufficient Info: Alert could not be created");
     }
   });
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/", async (req, res) => {
+   let id = req.body.id;
   let username = req.session.username;
-  const id = req.params.id;
   let eventIsActive = req.body.eventIsActive;
 
-  if (typeof eventIsActive === "boolean") {
-    readCustomerFile(username, (userData) => {
-      const event = getEvent(userData, id);
-      if (event) {
-        if (event.active !== eventIsActive) {
-          event.active = eventIsActive;
-        } else {
-          console.log(
-            "Event status is already " +
-              (eventIsActive ? "" : "not") +
-              " Active"
-          );
-          return res
-            .status(409)
-            .send(
-              "Event status is already " +
-                (eventIsActive ? "" : "not") +
-                " Active"
-            );
-        }
-        writeToCustomerFile(username, userData, () => {
-          console.log(event);
-          res.json({ id: id });
-        });
-      } else {
-        console.log("There is no Record of this event");
-        return res.status(404).send("There is no Record of this event");
-      }
-    });
+ if (mongoose.Types.ObjectId.isValid(id)) {
+    id = mongoose.Types.ObjectId(id);
   } else {
-    console.log("Status is not specified Correctly");
-    return res.status(400).send("Status not specified Correctly");
+    console.log("Invalid Id (" + id + ")");
+    return res.status(400).send("Invalid Id");
+  }
+  
+  if (typeof eventIsActive === "boolean") {
+    console.log({id});
+    if (await EventModel.exists({ _id: id })) {
+      UserModel.findOneAndUpdate(
+        { "events._id": id },
+        { $set: { "events.$.active": eventIsActive } },
+        (err) => {
+          if (err) {
+            console.log(err);
+          } else {
+            console.log(
+              "event.active of '" + id + "' changed to " + eventIsActive
+            );
+            res.status(200).json({ id, eventIsActive });
+          }
+        }
+      );
+    } else {
+      console.log("There is no Record of this event");
+      return res.status(404).send("There is no Record of this event");
+    }
+  } else {
+    console.log("Status is not Boolean");
+    return res.status(400).send("Status not Boolean");
   }
 });
 
-router.delete("/:id", (req, res) => {
-  let username = req.session.username;
-  let id = req.params.id;
+router.delete("/:id", isIdValid, async (req, res) => {
+  let id = req.params.objectId;
 
-  if (id) {
-    readCustomerFile(username, (userData) => {
-      if (getEvent(userData, id)) {
-        deleteEvent(userData, id);
-        writeToCustomerFile(username, userData, () => {
-          console.log("Deleted Event id", id);
-          res.status(200).json({ id: id });
-        });
-      } else {
-        console.log("Event is not in our Records");
-        res.status(400).send("Event is not in our Records");
-      }
-    });
+  if (await deleteEvent(id)) {
+    console.log("deleted event with id " + id);
+    res.status(200).json({ id: id });
   } else {
-    console.log("id is not specified");
-    res.status(400).send("id is not specified");
+    console.log("Event does not exist" + id);
+    res.status(404).send("Event does not exist");
   }
 });
 

@@ -1,0 +1,13 @@
+{
+    "order": {
+        "side": "BUY",
+        "symbol": "ABBV",
+        "startTime": "2020-11-16T16:45:09.590Z",
+        "id": "3LMBaIMloc-5rSATj7hmF",
+        "status": "WORKING",
+        "quantityFilled": 0,
+        "endTime": null,
+        "executionPrice": null,
+        "username": "twoTone"
+    }
+}

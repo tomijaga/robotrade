@@ -1,0 +1,50 @@
+.section-1,
+.section-2 {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.empty-section {
+  height: 100%;
+}
+
+a.noStyle {
+  text-decoration: none;
+  color: inherit;
+  margin: 0pt;
+  padding: 0pt;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+p.iconText {
+  margin: 0pt;
+  padding: 5pt 0pt;
+  font-size: 0.7rem;
+}
+.navCenter {
+  color: lightblue;
+  height:80px;
+  width:100%;
+}
+
+.navCenter:hover {
+  background: rgba(0, 184, 255, 0.2);
+  cursor: pointer;
+}
+.navCenter:active {
+  box-shadow: inset 0pt 50pt 50pt 50pt rgb(1, 10, 19);
+}
+
+.selected {
+  /* box-shadow: inset 50pt 50pt 50pt rgb(0, 43, 87); */
+  color: aqua;
+  font-weight: bold;
+}

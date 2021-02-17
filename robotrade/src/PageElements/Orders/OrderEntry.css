@@ -1,0 +1,59 @@
+.orderRow .MuiTableCell-root,
+.orderRow .MuiTableCell-sizeSmall {
+  padding: 2px;
+}
+
+.tableHeader {
+}
+
+.orderAccordion .MuiIconButton-root,
+.orderAccordion .MuiAccordionSummary-content,
+.Mui-expanded {
+  margin: 0px;
+  padding: 0px;
+}
+
+#order-accordion-entry .Mui-expanded,
+#order-accordion-entry {
+  margin: 0px;
+  min-height: 0px;
+}
+
+.orderAccordion .MuiAccordionSummary-root {
+  min-height: auto;
+}
+
+.orderRow .MuiTableCell-root {
+  /* border-top: 1px solid black;
+  border-bottom: 1px solid black;
+  border-right: 1px solid black; */
+  text-align: center;
+}
+
+.rowColorRed .MuiTableCell-root {
+  background-color: rgba(200, 0, 0, 0.3);
+  background-clip: content-box;
+}
+.rowColorRed .MuiTableCell-root:hover {
+  background-color: rgba(200, 0, 0, 0.5);
+}
+
+.rowColorGreen .MuiTableCell-root {
+  background-color: rgba(0, 200, 0, 0.3);
+}
+.rowColorGreen .MuiTableCell-root:hover {
+  background-color: rgba(0, 200, 0, 0.5);
+}
+
+.deleteButton.MuiButtonBase-root,
+.deleteButton.deleteButton {
+  color: transparent;
+  padding: 0px;
+}
+.deleteButton:hover {
+  color: black;
+}
+
+.pointer {
+  cursor: pointer;
+}

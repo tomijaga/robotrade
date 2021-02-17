@@ -1,0 +1,33 @@
+.headerAvatar {
+}
+
+.headerIconButton.MuiIconButton-root {
+  color: azure;
+  background-color: transparent;
+  border: 1.5px azure solid;
+  margin: 5px 10px;
+}
+
+.headerIconButton.MuiIconButton-root:hover {
+  color: black;
+  background-color: azure;
+  border-color: azure;
+  transition: background-color ease-out, color ease-out;
+}
+
+.noLinkStyle {
+  text-decoration: none;
+  color: inherit;
+}
+
+.hr {
+  width: 90%;
+}
+
+.notificationDrawer.MuiDrawer-root {
+  width: 200px;
+}
+
+.noDisplay.MuiDrawer-root {
+  display: none;
+}

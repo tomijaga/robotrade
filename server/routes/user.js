@@ -8,12 +8,14 @@ import {
   nextId,
   readCustomerFile,
   writeToCustomerFile,
-} from "../CustomFunctions/ReadWrite.js";
+} from "../RouteFunctions/ReadWrite.js";
 import initUser from "../initUser.js";
-import { createUser } from "../CustomFunctions/userFunctions.js";
-import { auth } from "../CustomFunctions/Authorize.js";
+import { createUser } from "../RouteFunctions/userFunctions.js";
+import { auth } from "../RouteFunctions/Authorize.js";
 
 const router = express.Router();
+
+//DEPRACATED
 
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());

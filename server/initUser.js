@@ -2,20 +2,24 @@ const user = {
   username: "",
   adminType: "none",
   watchlists: [],
-  stockCrawler: [],
-  events: {
-    alerts: [],
-    events: [],
+  stockCrawler: {
+    visible: true,
+    symbols: [],
   },
-  portfolio: {
-    account_value: 0,
+
+  alerts: [],
+  events: [],
+
+  trading_portfolio: {
+    buying_power: 0,
     active_orders: [],
-    owned_stocks: [],
-    traded_stocks: [],
-    stocks_PnL: 0,
+    currently_owned_stocks: [],
+    realised_PnL: 0,
+    all_traded_stocks: [],
+    unrealised_PnL: 0,
+    net_account_value: 0,
     history: {
-      deposits: [],
-      withdrawals: [],
+      transactions: [],
       orders: [],
       daily: [],
     },

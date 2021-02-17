@@ -1,0 +1,143 @@
+.App {
+  text-align: center;
+  background-color: rgb(21, 50, 50);
+  min-height: 100vh;
+  min-width: 100vw;
+  overflow-y: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.setPageRegions {
+  min-height: 100vh;
+  min-width: 100vw;
+  display: grid;
+  grid-template-rows: 3rem 1fr 1.5rem;
+  grid-template-columns: 4rem 1fr;
+  color: white;
+  overflow-y: none;
+}
+
+.bodyRegion {
+  display: grid;
+  grid-template-columns: 4rem 1fr;
+  font-size: calc(10px + 2vmin);
+  min-height: 100%;
+}
+
+.region {
+  border: 20cm solid white;
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.no-a-style {
+  color: inherit;
+  text-decoration: none;
+}
+
+#root {
+  --hover-color: rgba(100, 200, 255, 0.2);
+}
+.component-bg {
+  background: rgba(5, 15, 15, 0.55);
+}
+
+.component-hover:hover {
+  background-color: var(--hover-color);
+  cursor: pointer;
+}
+
+.highlight {
+  background-color: var(--hover-color);
+}
+
+.outline-right {
+  border-right: 4pt groove;
+  border-color: rgba(230, 250, 250, 0.8);
+}
+.outline-top {
+  border-top: 4pt groove;
+  border-color: rgba(230, 250, 250, 0.8);
+}
+
+.outline-left {
+  border-left: 4pt groove;
+  border-color: rgba(230, 250, 250, 0.8);
+}
+
+.outline-bottom {
+  border-bottom: 4pt groove;
+  border-color: rgba(230, 250, 250, 0.8);
+}
+
+.inline-top {
+  border-top: 1px solid lightblue;
+}
+
+.inline-bottom {
+  border-bottom: 1px solid lightblue;
+}
+
+.inline-right {
+  border-right: 1px solid lightblue;
+}
+
+.inline-left {
+  border-left: 1px solid lightblue;
+}
+
+.loss {
+  color: red;
+}
+.profit {
+  color: green;
+}
+
+.z99 {
+  z-index: 99;
+}
+.z100 {
+  z-index: 100;
+}
+.z101 {
+  z-index: 101;
+}
+
+.react-stockchart {
+  left: 0%;
+}
+
+.Mui-expanded,
+.MuiAccordionSummary-root,
+.MuiAccordionSummary-content {
+  margin: 0px;
+  min-height: 0px;
+}
+
+.App-link {
+  color: lightskyblue;
+  cursor: pointer;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

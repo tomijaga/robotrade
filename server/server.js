@@ -1,3 +1,5 @@
+import requirejs from "requirejs";
+import dotenv from "dotenv";
 import express from "express";
 import path from "path";
 import cors from "cors";
@@ -8,36 +10,52 @@ import orderRoute from "./routes/order.js";
 import eventsRoute from "./routes/events.js";
 import testRoute from "./routes/test.js";
 import stocksRoute from "./routes/stocks.js";
+import notificationsRoute from "./routes/notifications.js";
+import { ownedStocksRoute } from "./routes/ownedStocks.js";
 import fs, { accessSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import http from "http";
 //import socketIO from "socket.io";
-import WebSocket from "ws";
 import initUser from "./initUser.js";
 import userRoute from "./routes/user.js";
 import cookieParser from "cookie-parser";
 import express_session from "express-session";
 import sharedsession from "express-socket.io-session";
 import socketIOClient from "socket.io-client";
-import requirejs from "requirejs";
-import {
-  writeToStockHistory,
-  readCustomerFile,
-  writeToCustomerFile,
-} from "./CustomFunctions/ReadWrite.js";
-import merge from "lodash/merge.js";
-import { createUser } from "./CustomFunctions/userFunctions.js";
-import { accountDeposit } from "./CustomFunctions/accountFunctions.js";
-import { randomPrice, randomInteger } from "./CustomFunctions/randomn.js";
-import { createOrder } from "./CustomFunctions/orderFunctions.js";
-import { executeOrder } from "./CustomFunctions/Execute.js";
-import { login, logout, auth } from "./CustomFunctions/Authorize.js";
+import mongo from "mongodb";
+import mongoose from "mongoose";
 
+import merge from "lodash/merge.js";
+import { createUser } from "./RouteFunctions/userFunctions.js";
+import { accountDeposit } from "./RouteFunctions/accountFunctions.js";
+import { randomPrice, randomInteger } from "./Operations/randomn.js";
+import {
+  createOrder,
+  createCompOrder,
+} from "./RouteFunctions/orderFunctions.js";
+import { executeOrder } from "./Operations/Execute.js";
+import { login, logout, auth } from "./RouteFunctions/Authorize.js";
+import UserModel from "./models/user.js";
+import OrderModel from "./models/orders.js";
+import EventModel from "./models/event.js";
+import LoginModel from "./models/Login.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
+
+var expressWs = requirejs("express-ws")(app);
+const MongoDBStore = requirejs("connect-mongodb-session")(express_session);
+
+let sessionStore = new MongoDBStore({
+  uri: `mongodb+srv://tomijaga:robotrade@cluster.ftv5l.gcp.mongodb.net/robotradeDB?retryWrites=true&w=majority`,
+  collection: "mySessions",
+});
+
+sessionStore.on("error", function (error) {
+  console.log(error);
+});
 
 const session = express_session({
   secret: "some secret here",
@@ -46,13 +64,19 @@ const session = express_session({
   name: "session",
   saveUninitialized: true,
   rolling: true,
+  store: sessionStore,
   cookie: {
     maxAge: 1000 * 60 * 30,
   },
 });
 
 const server = http.createServer(app);
-const io = requirejs("socket.io")(server);
+const io = requirejs("socket.io")(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"],
+  },
+});
 
 // if (process.env.NODE_ENV === "development") {
 //   app.use(cors());
@@ -64,6 +88,7 @@ app.use(
       "https://localhost:8080",
       "https://localhost:3000",
       "http://localhost:3000",
+      "https://desolate-eyrie-26149.herokuapp.com/app/watchlist",
     ],
     credentials: true,
     exposedHeaders: ["set-cookie"],
@@ -81,9 +106,55 @@ io.use(
   })
 );
 
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useFindAndModify: false,
+  useCreateIndex: true,
+});
+
+//map db to app.locals
+app.locals.db = mongoose.connection;
+
+app.on("error", console.error.bind(console, "Database connection error:"));
+app.locals.db.once("open", () => {
+  //Start listening when database is connected
+
+  server.listen(process.env.PORT || 8080, function () {
+    console.log(
+      "CORS-enabled web server listening on port " + (process.env.PORT || 8080)
+    );
+  });
+});
+
 const connections = [];
+app.locals.io = io;
 io.on("connection", (socket) => {
   connections.push(socket);
+
+  console.log(connections.length + " conntected");
+
+  // let rand = Math.floor(Math.random() * 3);
+  // const order = {
+  //   symbol: "OLTR",
+  //   quantity: 100,
+  //   quantityFilled: 25,
+  //   side: "BUY",
+  // };
+  // switch (rand) {
+  //   case 0:
+  //     return socket.emit("order-filled", order);
+  //   case 1:
+  //     return socket.emit("order-partially-filled", order);
+  //   case 2:
+  //     return socket.emit("order-terminated", order);
+  //   default:
+  //     return;
+  // }
+
+  socket.on("received", (data) => {
+    console.log("-----RECIEVED------");
+  });
 
   console.log(" %s sockets are connected", connections.length);
   socket.on("login", function (userdata) {
@@ -98,7 +169,13 @@ io.on("connection", (socket) => {
   });
   socket.on("disconnect", () => {
     connections.splice(connections.indexOf(socket), 1);
-    console.log("disconnected");
+    console.log(connections.length + " conntected");
+  });
+});
+
+app.ws("/api/ws", function (ws, req) {
+  ws.on("message", function (msg) {
+    ws.send(msg);
   });
 });
 
@@ -110,18 +187,16 @@ const admin = (req, res, next) => {
 };
 
 app.use("/", indexRoute);
-app.use("/watchlists", auth, watchlistRoute);
-app.use("/account", auth, accountRoute);
-app.use("/orders", auth, orderRoute);
-app.use("/events", auth, eventsRoute);
+app.use("/api/notification", auth, notificationsRoute);
+app.use("/api/watchlists", auth, watchlistRoute);
+app.use("/api/account", auth, accountRoute);
+app.use("/api/orders", auth, orderRoute);
+app.use("/api/ownedStocks", auth, ownedStocksRoute);
+app.use("/api/events", auth, eventsRoute);
 app.use("/user", auth, userRoute);
 app.use("/test", testRoute);
-app.use("/stocks", stocksRoute);
+app.use("/api/stocks", stocksRoute);
 app.get("/admin", auth, admin);
-
-server.listen(8080, function () {
-  console.log("CORS-enabled web server listening on port 8080");
-});
 
 app.get("/", (req, res, next) => {
   res.sendFile(path.join(__dirname, "build", "index.html"));
@@ -148,107 +223,18 @@ process.on(
   shutDownServer
 );
 
-app.post("/update", (req, res, next) => {
-  let userFile = req.body.username + ".json";
+import "./Operations/EventsOperations.js";
+// const processingOfOrder = (username, order) => {
+//   const { compUsername, compOrder } = createComplementaryOrder(order);
+//   console.log(compUsername, compOrder);
+//   let randPrice = randomPrice(0.1, (randomInteger(0.1, 32) * 100) / 3);
+//   return executeOrder(
+//     username,
+//     order.id,
+//     compUsername,
+//     compOrder.id,
+//     randPrice
+//   );
+// };
 
-  let userData = fs.readFileSync(
-    path.resolve(__dirname, "./Data/Users", userFile)
-  );
-  userData = JSON.parse(userData);
-
-  let objMerge = merge(initUser, userData);
-  console.log(objMerge);
-  fs.writeFileSync(
-    path.resolve(__dirname, "./Data/Users", userFile),
-    JSON.stringify(objMerge)
-  );
-  res.json(objMerge);
-});
-
-const create40Robots = () => {
-  for (let i = 1; i <= 40; i++) {
-    let username = "robot" + (i < 10 ? "0" + i : i);
-
-    let userData = createUser(username);
-    accountDeposit(userData, 1000000);
-
-    if (i >= 30) {
-      userData.adminType = "SELLER_BOT";
-    }
-
-    writeToCustomerFile(username, userData);
-    console.log(username, "created!:", userData.portfolio.account_value);
-  }
-};
-
-app.post("/create40Robots", (req, res) => {
-  create40Robots();
-  console.log(initUser.portfolio.account_value);
-  res.json({ "40 Robots Created!!": "key" });
-});
-
-const createRandomnOrder = (username) => {
-  let userData = readCustomerFile(username);
-
-  let side = "BUY"; //randomInteger(0, 1) === 0 ? "BUY" : "BUY";
-  let symbol = "TSLA";
-  let orderType = "MARKET";
-  let quantity = randomInteger(25, 300);
-
-  let orderObj = { side, symbol, orderType, quantity };
-  let createdOrder = createOrder(userData, orderObj);
-  writeToCustomerFile(username, userData);
-
-  return createdOrder;
-};
-
-const createComplementaryOrder = (order) => {
-  let compUsername;
-
-  if (order.side === "SELL") {
-    let random = randomInteger(1, 29);
-    compUsername = "robot" + (random < 10 ? "0" + random : random);
-  } else if (order.side === "BUY") {
-    compUsername = "robot" + randomInteger(30, 40);
-  }
-
-  console.log(compUsername);
-
-  let userData = readCustomerFile(compUsername);
-
-  let side = order.side === "BUY" ? "SELL" : "BUY";
-  let symbol = "TSLA";
-  let orderType = "MARKET";
-  let quantity = randomInteger(25, 300);
-
-  let orderObj = { side, symbol, orderType, quantity };
-  let compOrder = createOrder(userData, orderObj);
-  writeToCustomerFile(compUsername, userData);
-
-  return { compUsername, compOrder };
-};
-
-const processingOfOrder = (username, order) => {
-  const { compUsername, compOrder } = createComplementaryOrder(order);
-  console.log(compUsername, compOrder);
-  let randPrice = randomPrice(0.1, (randomInteger(0.1, 32) * 100) / 3);
-  return executeOrder(
-    username,
-    order.id,
-    compUsername,
-    compOrder.id,
-    randPrice
-  );
-};
-
-app.use("/test/processOrder", (req, res) => {
-  let rand = randomInteger(1, 29);
-  let username = "robot" + (rand < 10 ? "0" + rand : rand);
-  username = req.body.username;
-  console.log(username);
-  let order = createRandomnOrder(username);
-  console.log(order);
-  let orderDetails = processingOfOrder(username, order);
-
-  res.json(orderDetails);
-});
+export {io as socketIO} 

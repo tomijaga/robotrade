@@ -8,14 +8,17 @@ import {
   nextId,
   readCustomerFile,
   writeToCustomerFile,
-} from "../CustomFunctions/ReadWrite.js";
-import { auth } from "../CustomFunctions/Authorize.js";
+} from "../RouteFunctions/ReadWrite.js";
+import { auth } from "../RouteFunctions/Authorize.js";
 import {
   getWatchlist,
   createNewWatchlist,
   deleteWatchlist,
   removeWatchlistSymbol,
-} from "../CustomFunctions/watchlistFunctions.js";
+} from "../RouteFunctions/watchlistFunctions.js";
+import UserModel from "../models/user.js";
+import WatchlistModel, { watchlistSchema } from "../models/watchlist.js";
+import watchlist from "../models/watchlist.js";
 
 const router = express.Router();
 
@@ -25,127 +28,206 @@ router.use(bodyParser.json());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-router.get("/", (req, res, next) => {
-  let username = req.session.username;
-  readCustomerFile(username, (userData) => {
-    console.log(username + "'s watchlists", userData.watchlists);
-    res.status(200).json(userData.watchlists);
-  });
-});
+router.get("/", getAllWatchlists);
+router.get("/:watchlistName", doesWatchlistExist, getWatchlistFromName);
+router.post("/:watchlistName", addWatchlist);
+router.put(
+  "/:watchlistName/:symbol",
+  doesWatchlistExist,
+  symbol_is_in_watchlist,
+  addSymbolToWatchlist
+);
+router.delete("/:watchlistName", doesWatchlistExist, removeWatchlist);
+router.delete(
+  "/:watchlistName/:symbol",
+  doesWatchlistExist,
+  symbol_is_in_watchlist,
+  removeSymbolFromWatchlist
+);
 
-router.get("/:watchlistName", (req, res, next) => {
-  console.log("getting watchlist ...");
+async function doesWatchlistExist(req, res, next) {
+  let username = req.session.username;
+  let watchlistName = req.params.watchlistName;
+
+  let exists = await UserModel.exists({
+    username,
+    "watchlists.name": watchlistName,
+  });
+
+  if (!exists) {
+    console.log("Watchlist Does Not Exist");
+    return res.status(404).send("Watchlist Does Not Exist");
+  }
+
+  next();
+}
+
+async function symbol_is_in_watchlist(req, res, next) {
+  let username = req.session.username;
+  let { watchlistName, symbol } = req.params;
+
+  req.params.symbol = symbol = symbol.toUpperCase();
+
+  let exists = await UserModel.findOne({
+    username,
+  })
+    .select("watchlists -_id ")
+    .lean();
+
+  console.log(watchlistName);
+  console.log(exists);
+  exists = exists.watchlists.find((list) => list.name === watchlistName);
+  console.log(exists);
+  exists = exists.symbols.includes(symbol);
+  console.log("symbol Exists", exists);
+  req.params.symbolExists = exists;
+  next();
+}
+
+async function getAllWatchlists(req, res, next) {
+  let username = req.session.username;
+
+  UserModel.findOne({ username }).then((user) => {
+    console.log("sent", username + "'s watchlists");
+    res.status(200).json(user.watchlists);
+  });
+}
+
+async function getWatchlistFromName(req, res, next) {
   let username = req.session.username;
   const { watchlistName } = req.params;
 
-  readCustomerFile(username, (userData) => {
-    let watchlist = getWatchlist(userData, watchlistName);
-    if (watchlist) {
-      console.log(watchlist);
-      res.status(200).json(watchlist);
-    } else {
-      console.log("watchlist '" + watchlistName + "' does not exist");
-      res
-        .status(404)
-        .send({ message: "watchlist '" + watchlistName + "' does not exist" });
-    }
+  let watchlist = await UserModel.findOne({ username }).select({
+    watchlists: { $elemMatch: { name: watchlistName } },
   });
-});
+  watchlist = watchlist.watchlists[0];
 
-router.post("/:watchlistName", (req, res) => {
+  console.log(watchlist);
+  res.status(200).json(watchlist);
+}
+
+async function addWatchlist(req, res) {
   let username = req.session.username;
   let watchlistName = req.params.watchlistName;
   console.log(watchlistName);
-  if (("entered", watchlistName)) {
-    readCustomerFile(username, (userData) => {
-      if (!getWatchlist(userData, watchlistName)) {
-        createNewWatchlist(userData, watchlistName);
-        writeToCustomerFile(username, userData, () => {
-          console.log("adding '", watchlistName, "' to Watchlist");
-          res.status(200).json({ watchlistName: watchlistName });
-        });
-      } else {
-        console.log("watchlist '" + watchlistName + "' Already Exists ");
-        res
-          .status(409)
-          .json("watchlist '" + watchlistName + "' Already Exists ");
-      }
+
+  let exists = await UserModel.exists({
+    username,
+    "watchlists.name": watchlistName,
+  });
+  if (!exists) {
+    let newWatchlist = new WatchlistModel({ name: watchlistName });
+
+    await UserModel.findOneAndUpdate(
+      { username },
+      { $push: { watchlists: newWatchlist } }
+    ).then(async (user) => {
+      console.log(
+        "adding '",
+        watchlistName,
+        "' to " + username + "'s Watchlists"
+      );
+      res.status(200).json({ watchlistName: watchlistName });
     });
   } else {
-    console.log("watchlistName not defined");
-    res.status(400).send("watchlistName not defined");
+    console.log("Watchlist already Exists");
+    res.status(409).send("Watchlist already Exists");
   }
-});
+}
 
-router.put("/:watchlistName/:symbol", (req, res) => {
+async function addSymbolToWatchlist(req, res) {
   let username = req.session.username;
-  const { watchlistName, symbol } = req.params;
+  const { watchlistName, symbol, symbolExists } = req.params;
 
-  if (watchlistName && symbol) {
-    readCustomerFile(username, (userData) => {
-      const watchlist = getWatchlist(userData, watchlistName);
-      if (watchlist) {
-        watchlist.symbols.push(symbol);
-        writeToCustomerFile(username, userData, () => {
-          console.log("adding '", symbol, "' to ", watchlistName);
-          res
-            .status(200)
-            .json({ watchlistName: watchlistName, symbol: symbol });
-        });
-      } else {
-        console.log(`Watchlist '${watchlistName}' does not Exist`);
-        res.status(404).send(`Watchlist '${watchlistName}' does not Exist`);
-      }
+  if (!symbolExists) {
+    UserModel.findOne({ username }).exec((err, user) => {
+      if (err) return res.status(404).send("Could not save Symbol to database");
+
+      let watchlist = user.watchlists.find(
+        (list) => list.name === watchlistName
+      );
+
+      watchlist.symbols.push(symbol);
+      user.save();
+      console.log(
+        `symbol (${symbol}) has been added to watchlist (${watchlistName})`
+      );
+      res.status(200).json({ symbol, watchlistName });
     });
   } else {
-    console.log("watchlistName or symbol not defined");
-    res.status(400).send("watchlistName or symbol not defined");
+    console.log(
+      "Symbol:[" + symbol + "] is Already in watchlist:[" + watchlistName + "]"
+    );
+    res
+      .status(409)
+      .send(
+        "Symbol (" +
+          symbol +
+          ") is Already in watchlist (" +
+          watchlistName +
+          ")"
+      );
   }
-});
+}
 
-router.delete("/:watchlistName", (req, res) => {
+async function removeWatchlist(req, res) {
   let username = req.session.username;
   const watchlistName = req.params.watchlistName;
 
-  if (watchlistName) {
-    readCustomerFile(username, (userData) => {
-      deleteWatchlist(userData, watchlistName);
-      writeToCustomerFile(username, userData, () => {
-        console.log("deleting '", watchlistName, "' watchlist");
-        res.status(200).json({ watchlistName: watchlistName });
-      });
-    });
-  } else {
-    console.log("watchlistName not defined");
-    res.status(400).send("watchlistName not defined");
-  }
-});
+  UserModel.findOneAndUpdate(
+    { username },
+    { $pull: { watchlists: { name: watchlistName } } }
+  ).exec((err) => {
+    if (err) {
+      throw err;
+    } else {
+      console.log("watchlist (" + watchlistName + ") has been deleted");
+      res.status(200).json({ watchlistName });
+    }
+  });
+}
 
-router.delete("/:watchlistName/:symbol", (req, res) => {
+async function removeSymbolFromWatchlist(req, res) {
   let username = req.session.username;
-  const { watchlistName, symbol } = req.params;
+  const { watchlistName, symbol, symbolExists } = req.params;
 
-  if (watchlistName && symbol) {
-    readCustomerFile(username, (userData) => {
-      const watchlist = getWatchlist(userData, watchlistName);
+  if (symbolExists) {
+    UserModel.findOne({ username }).then(async (user) => {
+      let watchlist = user.watchlists.find(
+        (list) => list.name === watchlistName
+      );
+      //console.log(watchlist);
+      removeWatchlistSymbol(watchlist, symbol);
+      //console.log(watchlist);
 
-      if (watchlist) {
-        removeWatchlistSymbol(watchlist, symbol);
-        writeToCustomerFile(username, userData, () => {
-          console.log("removing '", symbol, "' from ", watchlistName);
-          res
-            .status(200)
-            .json({ watchlistName: watchlistName, symbol: symbol });
-        });
-      } else {
-        console.log(`Watchlist '${watchlistName}' does not Exist`);
-        res.status(404).send(`Watchlist '${watchlistName}' does not Exist`);
-      }
+      await user.save();
     });
+    console.log(
+      "Symbol (" +
+        symbol +
+        ") has been removed from watchlist (" +
+        watchlistName +
+        ")"
+    );
+    res.status(200).json({ watchlistName: watchlistName, symbol: symbol });
   } else {
-    console.log("watchlistName or symbol not defined");
-    res.status(400).send("watchlistName or symbol not defined");
+    console.log(
+      "Symbol (" +
+        symbol +
+        ") does not Exist in watchlist (" +
+        watchlistName +
+        ")"
+    );
+    res
+      .status(404)
+      .send(
+        "Symbol (" +
+          symbol +
+          ") does not Exist in watchlist (" +
+          watchlistName +
+          ")"
+      );
   }
-});
+}
 
 export default router;

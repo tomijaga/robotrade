@@ -1,0 +1,4 @@
+.event-dialog-symbol:active,
+.event-dialog-symbol:hover {
+  display: none;
+}

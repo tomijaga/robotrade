@@ -1,0 +1,89 @@
+{
+    "username": "123",
+    "adminType": "none",
+    "watchlists": [
+        {
+            "name": "bare",
+            "symbols": [
+                "TSLAX"
+            ]
+        }
+    ],
+    "stockCrawler": [],
+    "events": {
+        "alerts": [],
+        "events": []
+    },
+    "portfolio": {
+        "account_value": 12186,
+        "active_orders": [],
+        "owned_stocks": [],
+        "traded_stocks": [],
+        "stocks_PnL": 0,
+        "history": {
+            "deposits": [
+                {
+                    "value": 2000,
+                    "time": "2020-11-13T21:48:27.769Z",
+                    "type": "DEPOSIT"
+                },
+                {
+                    "value": 4564,
+                    "time": "2020-11-13T22:20:35.786Z",
+                    "type": "DEPOSIT"
+                },
+                {
+                    "value": 112,
+                    "time": "2020-11-13T22:24:01.356Z",
+                    "type": "DEPOSIT"
+                },
+                {
+                    "value": 6453,
+                    "time": "2020-11-13T22:26:20.656Z",
+                    "type": "DEPOSIT"
+                }
+            ],
+            "withdrawals": [
+                {
+                    "value": 20,
+                    "time": "2020-11-13T22:05:24.258Z",
+                    "type": "WITHDRAWAL"
+                },
+                {
+                    "value": 14,
+                    "time": "2020-11-13T22:20:26.822Z",
+                    "type": "WITHDRAWAL"
+                },
+                {
+                    "value": 675,
+                    "time": "2020-11-13T22:22:24.391Z",
+                    "type": "WITHDRAWAL"
+                },
+                {
+                    "value": 234,
+                    "time": "2020-11-13T22:26:14.722Z",
+                    "type": "WITHDRAWAL"
+                }
+            ],
+            "orders": [],
+            "daily": []
+        }
+    },
+    "Robotrade_portfolio": {
+        "trading_style": "Aggressive",
+        "deposit": 0,
+        "amount_allocated": 0,
+        "net_value": 0,
+        "profit_or_loss": 0,
+        "trade_with_profits": "no",
+        "orders": [],
+        "stock_to_trade": [],
+        "traded_stocks": [],
+        "history": {
+            "deposits": [],
+            "withdrawals": [],
+            "orders": [],
+            "daily": []
+        }
+    }
+}

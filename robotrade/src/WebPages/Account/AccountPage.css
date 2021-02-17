@@ -1,0 +1,26 @@
+.accPageContainer {
+  padding: 40px;
+
+  text-align: left;
+}
+
+.accountIcon {
+}
+
+.options {
+  text-align: center;
+  display: flex;
+  justify-content: flex-start;
+  cursor: pointer;
+}
+
+.options:hover {
+  text-decoration: underline;
+}
+
+.accBeforeIcon:hover {
+  color: lightskyblue;
+  transition: color ease-out;
+  transition-timing-function: linear;
+  cursor: pointer;
+}

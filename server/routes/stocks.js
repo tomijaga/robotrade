@@ -4,11 +4,15 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import fs from "fs";
 import bodyParser from "body-parser";
-import { readStockHistory } from "../CustomFunctions/ReadWrite.js";
+import { readStockHistory } from "../RouteFunctions/ReadWrite.js";
 import reverse from "lodash/reverse.js";
 import fetch from "node-fetch";
-import { FinnhubAPI } from "@stoqey/finnhub/dist/api/index.js";
+import finnhubPkg from "@stoqey/finnhub/dist/api/index.js";
 import FINNHUB from "../ssl/Finnhub.js";
+import StockModel from "../models/stocks.js";
+import UserModel from "../models/user.js";
+
+const { FinnhubAPI } = finnhubPkg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -20,12 +24,16 @@ router.use(bodyParser.json());
 
 router.get("/:symbol/history", symbolHistory);
 router.get("/:symbol", stockData);
+
 router.get("/", async (req, res) => {
   const { symbol, minPrice, maxPrice } = req.query;
+  // res.sendStatus(400);
+  res.status(200);
+  res.json({});
 });
 
 async function symbolHistory(req, res) {
-  const { symbol } = req.params;
+  const symbol = req.params.symbol.toUpperCase();
   let { startDate, endDate, minQuantity, maxQuantity } = req.query;
 
   if (startDate) {
@@ -50,9 +58,14 @@ async function symbolHistory(req, res) {
 
   let filePath = path.resolve(__dirname, "../Data/Stocks", symbol + ".json");
 
-  if (fs.existsSync(filePath)) {
+  if (StockModel.exists({ symbol: symbol })) {
     console.log("\nNew Stock History Query ...");
-    let stockHistory = readStockHistory(symbol);
+
+    let stockHistory = await StockModel.findOne({ symbol: symbol }).select(
+      "history -_id"
+    );
+
+    stockHistory = stockHistory.history;
 
     console.log("startDate:", startDate);
     console.log("endDate:", endDate);
@@ -75,8 +88,7 @@ async function symbolHistory(req, res) {
         startDate.getTime() <= date.getTime()
       );
     });
-
-    console.log(stockHistory);
+    console.log("stockHistory", stockHistory);
 
     return res.json({
       symbol,

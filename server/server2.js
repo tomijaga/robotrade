@@ -13,19 +13,24 @@ const app = express();
 
 const server = http.createServer(app);
 
-const io = requirejs("socket.io-client");
+// const io = requirejs("socket.io-client");
 
-const socket = io.connect("http://localhost:8080");
+// const socket = io.connect("http://localhost:8080");
 
-socket.on("connect", () => {
-  console.log("Connected");
-});
+const io = requirejs("socket.io")(server);
+io.on("connection", (socket) => {
+  console.log("Connection");
 
-socket.emit("server2", "secret Message");
+  socket.on("connect", () => {
+    console.log("Connected");
+  });
 
-socket.on("FromAPI", (data) => {
-  console.log("ran From API");
-  console.log(data);
+  socket.emit("server2", "secret Message");
+
+  socket.on("FromAPI", (data) => {
+    console.log("ran From API");
+    console.log(data);
+  });
 });
 
 server.listen(8001, console.log("running"));
